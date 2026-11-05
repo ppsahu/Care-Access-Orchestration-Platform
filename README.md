@@ -1,47 +1,56 @@
 # Care Access Orchestration Platform
 
-Synthetic-data portfolio project for provider search and appointment administration. It does not diagnose conditions or recommend treatment.
+Synthetic-data portfolio project for provider search and appointment administration. It helps with administrative navigation only; it does not diagnose conditions or recommend treatment.
 
-## Current slice
+## Current implementation
 
-- Java 21 / Spring Boot REST API
-- PostgreSQL schema and deterministic synthetic slots
-- Provider availability search
-- Patient booking and cancellation endpoints
-- Database row locking for single-slot booking races
+- Java 21 / Spring Boot API with PostgreSQL migrations and synthetic slots
+- Provider availability search and booking/cancellation lifecycle
+- Database row lock for concurrent slot claims
+- React + TypeScript patient UI for search, booking, and upcoming appointments
+- Synthetic demo patient identity; the `X-Demo-Patient` header is local-only and is not authentication
 
-Kafka, Redis, referral/coverage adapters, waitlist, Spring AI extraction, authentication, and React workflow are planned next. The current demo patient header is for local development only and is not authentication.
+Kafka, Redis, referral and coverage adapters, waitlist, and Spring AI request parsing remain planned backend slices.
 
-## Run
+## Run locally
+
+Start PostgreSQL from the project root:
 
 ```sh
 docker compose up -d postgres
+```
+
+In one terminal:
+
+```sh
 cd backend
 mvn spring-boot:run
 ```
 
-Search:
+In another terminal:
 
 ```sh
-curl 'http://localhost:8080/api/v1/providers?specialty=CARDIOLOGY&postalCode=02139&from=2026-12-01T00:00:00-05:00&to=2026-12-31T23:59:59-05:00'
+cd frontend
+npm install
+npm run dev
 ```
 
-Book a returned slot:
+Open the Vite URL shown in the terminal (usually http://localhost:5173). Vite proxies API requests to the backend at localhost:8080.
+
+Search demo:
 
 ```sh
-curl -X POST http://localhost:8080/api/v1/bookings \
-  -H 'Content-Type: application/json' -H 'X-Demo-Patient: patient-demo-001' \
-  -d '{"slotId":"a1000000-0000-4000-8000-000000000001"}'
+curl 'http://localhost:8080/api/v1/providers?specialty=CARDIOLOGY&postalCode=02139&from=2026-12-01T00:00:00Z&to=2026-12-31T23:59:59Z'
 ```
 
-The seed data uses December 2026 appointment times. No real patient or provider data is included.
+All seed appointments use December 2026 dates. All data is synthetic.
 
 ## API
 
-- `GET /api/v1/providers`: `specialty`, `postalCode`, `from`, `to`
-- `POST /api/v1/bookings`: `X-Demo-Patient` and `{ "slotId": "..." }`
-- `GET /api/v1/bookings`: `X-Demo-Patient`
-- `POST /api/v1/bookings/{id}/cancel`: `X-Demo-Patient`
+- `GET /api/v1/providers?specialty=&postalCode=&from=&to=`
+- `POST /api/v1/bookings` with `X-Demo-Patient` and `{ "slotId": "..." }`
+- `GET /api/v1/bookings` with `X-Demo-Patient`
+- `POST /api/v1/bookings/{id}/cancel` with `X-Demo-Patient`
 - `GET /actuator/health`
 
-Architecture and full delivery plan: [../CARE_ACCESS_PLATFORM_DESIGN.md](../CARE_ACCESS_PLATFORM_DESIGN.md).
+No performance claims are included; collect measurements before reporting them.
