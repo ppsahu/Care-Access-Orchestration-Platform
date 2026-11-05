@@ -12,6 +12,10 @@ Synthetic-data portfolio project for provider search and appointment administrat
 
 Kafka, Redis, referral and coverage adapters, waitlist, and Spring AI request parsing remain planned backend slices.
 
+## UI Page
+<img width="1697" height="1301" alt="image" src="https://github.com/user-attachments/assets/63d958ad-1d37-4b57-8354-a87e5210da25" />
+
+
 ## Run locally
 
 Start PostgreSQL from the project root:
