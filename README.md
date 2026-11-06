@@ -1,68 +1,50 @@
 # Care Access Orchestration Platform
 
-**Find care. Book with confidence. Keep appointments in sync.**
+Synthetic-data portfolio project for provider search and appointment administration. It does not diagnose conditions or recommend treatment.
 
-A patient-friendly scheduling experience that brings provider search and appointment administration into one place. Search synthetic provider availability, reserve an appointment, review upcoming bookings, or cancel a time that no longer works.
+## Current implementation
 
-> **Administrative support only:** this platform does not diagnose symptoms, recommend treatment, or make clinical decisions. All demo data is synthetic.
+- Java 21 / Spring Boot REST API
+- PostgreSQL schema and deterministic synthetic slots
+- Provider availability search
+- Patient booking, cancellation, and rescheduling endpoints
+- Database row locking and an active-slot uniqueness constraint for booking races
+- Idempotency keys for booking and rescheduling retries; a key cannot be reused with a different payload
+- Bounded synthetic demo data, PostgreSQL indexes, Flyway migrations, and Actuator health/metrics
 
-## What it can do
+Kafka outbox delivery, Redis availability caching, deterministic referral/coverage adapters, waitlist offers, Spring AI request interpretation, and production authentication are planned next. The demo patient header is for local development only and is not authentication.
 
-- **Find available care:** Search appointment options by specialty, ZIP code, and date range.
-- **See the details up front:** Review the provider, clinic, location, and appointment time before booking.
-- **Book an appointment:** Reserve an available time through the patient-facing React interface.
-- **Manage appointments:** View upcoming bookings and cancel an appointment when plans change.
-- **Prevent slot conflicts:** Use a database transaction and row lock so concurrent requests cannot claim the same appointment slot.
-- **Try a realistic demo:** Explore seeded synthetic providers and appointment availability without real patient data.
-
-## Project status
-
-The current working slice includes the React + TypeScript patient UI, Java 21 / Spring Boot API, PostgreSQL migrations, synthetic seed data, provider availability search, booking, cancellation, and local demo patient identity.
-
-Referral and coverage validation, rescheduling, waitlist offers, Kafka event delivery, Redis caching, Spring AI request interpretation, and production authentication are planned next. The demo `X-Demo-Patient` header is for local development only and is **not authentication**.
-
-## UI Page
-<img width="1697" height="1301" alt="image" src="https://github.com/user-attachments/assets/63d958ad-1d37-4b57-8354-a87e5210da25" />
-
-## Run locally
-
-Start PostgreSQL from the project root:
+## Run
 
 ```sh
 docker compose up -d postgres
-```
-
-In one terminal:
-
-```sh
 cd backend
 mvn spring-boot:run
 ```
 
-In another terminal:
+Search:
 
 ```sh
-cd frontend
-npm install
-npm run dev
+curl 'http://localhost:8080/api/v1/providers?specialty=CARDIOLOGY&postalCode=02139&from=2026-12-01T00:00:00-05:00&to=2026-12-31T23:59:59-05:00'
 ```
 
-Open the Vite URL shown in the terminal (usually http://localhost:5173). Vite proxies API requests to the backend at localhost:8080.
-
-Search demo:
+Book a returned slot:
 
 ```sh
-curl 'http://localhost:8080/api/v1/providers?specialty=CARDIOLOGY&postalCode=02139&from=2026-12-01T00:00:00Z&to=2026-12-31T23:59:59Z'
+curl -X POST http://localhost:8080/api/v1/bookings \
+  -H 'Content-Type: application/json' -H 'X-Demo-Patient: patient-demo-001' \
+  -d '{"slotId":"a1000000-0000-4000-8000-000000000001"}'
 ```
 
-All seed appointments use December 2026 dates. All data is synthetic.
+The seed data uses December 2026 appointment times. No real patient or provider data is included.
 
 ## API
 
-- `GET /api/v1/providers?specialty=&postalCode=&from=&to=`
-- `POST /api/v1/bookings` with `X-Demo-Patient` and `{ "slotId": "..." }`
-- `GET /api/v1/bookings` with `X-Demo-Patient`
-- `POST /api/v1/bookings/{id}/cancel` with `X-Demo-Patient`
+- `GET /api/v1/providers`: `specialty`, `postalCode`, `from`, `to`
+- `POST /api/v1/bookings`: `X-Demo-Patient`, `Idempotency-Key`, and `{ "slotId": "..." }`
+- `GET /api/v1/bookings`: `X-Demo-Patient`
+- `POST /api/v1/bookings/{id}/cancel`: `X-Demo-Patient`
+- `POST /api/v1/bookings/{id}/reschedule`: `X-Demo-Patient`, `Idempotency-Key`, and `{ "slotId": "..." }`
 - `GET /actuator/health`
 
-No performance claims are included; collect measurements before reporting them.
+Architecture and full delivery plan: [../CARE_ACCESS_PLATFORM_DESIGN.md](../CARE_ACCESS_PLATFORM_DESIGN.md).
