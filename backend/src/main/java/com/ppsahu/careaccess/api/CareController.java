@@ -19,12 +19,15 @@ public class CareController {
       @RequestParam @DateTimeFormat(iso=DateTimeFormat.ISO.DATE_TIME) OffsetDateTime from,
       @RequestParam @DateTimeFormat(iso=DateTimeFormat.ISO.DATE_TIME) OffsetDateTime to){return care.search(specialty,postalCode,from,to);}
     @PostMapping("/bookings") @ResponseStatus(HttpStatus.CREATED)
-    public Booking book(@RequestHeader("X-Demo-Patient") String patientId,@RequestBody BookRequest request){
-        try{return care.book(patientId,request.slotId());} catch(IllegalStateException e){throw new ResponseStatusException(HttpStatus.CONFLICT,"Slot is no longer available");}
+    public Booking book(@RequestHeader("X-Demo-Patient") String patientId,@RequestHeader("Idempotency-Key") String key,@RequestBody BookRequest request){
+        try{return care.book(patientId,request.slotId(),key);} catch(IllegalStateException e){throw new ResponseStatusException(HttpStatus.CONFLICT,"Slot is no longer available");} catch(CareService.IdempotencyConflictException e){throw new ResponseStatusException(HttpStatus.CONFLICT,"Idempotency key was already used for a different request");} catch(IllegalArgumentException e){throw new ResponseStatusException(HttpStatus.BAD_REQUEST,e.getMessage());}
     }
     @GetMapping("/bookings") public List<Booking> bookings(@RequestHeader("X-Demo-Patient") String patientId){return care.bookings(patientId);}
     @PostMapping("/bookings/{id}/cancel") public Booking cancel(@RequestHeader("X-Demo-Patient") String patientId,@PathVariable UUID id){
         try{return care.cancel(patientId,id);} catch(SecurityException e){throw new ResponseStatusException(HttpStatus.NOT_FOUND);}
+    }
+    @PostMapping("/bookings/{id}/reschedule") public Booking reschedule(@RequestHeader("X-Demo-Patient") String patientId,@PathVariable UUID id,@RequestHeader("Idempotency-Key") String key,@RequestBody BookRequest request){
+        try{return care.reschedule(patientId,id,request.slotId(),key);}catch(CareService.IdempotencyConflictException e){throw new ResponseStatusException(HttpStatus.CONFLICT,"Idempotency key was already used for a different request");}catch(NoSuchElementException e){throw new ResponseStatusException(HttpStatus.NOT_FOUND);}catch(IllegalStateException e){throw new ResponseStatusException(HttpStatus.CONFLICT,e.getMessage());}catch(IllegalArgumentException e){throw new ResponseStatusException(HttpStatus.BAD_REQUEST,e.getMessage());}
     }
     public record BookRequest(UUID slotId){}
 }
