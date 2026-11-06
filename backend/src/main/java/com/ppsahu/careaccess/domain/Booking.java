@@ -9,7 +9,7 @@ import java.util.UUID;
 public class Booking {
     @Id private UUID id;
     private String patientId;
-    @OneToOne(fetch = FetchType.EAGER) @JoinColumn(name="slot_id", nullable=false, unique=true)
+    @ManyToOne(fetch = FetchType.EAGER) @JoinColumn(name="slot_id", nullable=false)
     private AppointmentSlot slot;
     private OffsetDateTime createdAt;
     private boolean cancelled;
