@@ -2,6 +2,8 @@
 
 Synthetic-data portfolio project for provider search and appointment administration. It does not diagnose conditions or recommend treatment.
 
+Scaling assumptions, capacity objectives, architecture, bottlenecks, and load-test plan: [Scaling plan](docs/SCALING_PLAN.md).
+
 ## Current implementation
 
 - Java 21 / Spring Boot REST API
