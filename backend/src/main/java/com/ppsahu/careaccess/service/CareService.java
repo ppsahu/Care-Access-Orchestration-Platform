@@ -8,13 +8,15 @@ import java.util.*;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 
 @Service
 public class CareService {
     private final SlotRepository slots; private final BookingRepository bookings; private final IdempotencyRepository idempotency;
     public CareService(SlotRepository slots, BookingRepository bookings,IdempotencyRepository idempotency){this.slots=slots;this.bookings=bookings;this.idempotency=idempotency;}
-    public List<AppointmentSlot> search(String specialty,String postalCode,OffsetDateTime from,OffsetDateTime to){
-        return slots.findByStatusAndSpecialtyIgnoreCaseAndPostalCodeAndStartsAtBetweenOrderByStartsAt(SlotStatus.OPEN,specialty,postalCode,from,to);
+    public Page<AppointmentSlot> search(String specialty,String postalCode,OffsetDateTime from,OffsetDateTime to,Pageable pageable){
+        return slots.findByStatusAndSpecialtyIgnoreCaseAndPostalCodeAndStartsAtBetweenOrderByStartsAt(SlotStatus.OPEN,specialty,postalCode,from,to,pageable);
     }
     @Transactional
     public Booking book(String patientId,UUID slotId,String key){
