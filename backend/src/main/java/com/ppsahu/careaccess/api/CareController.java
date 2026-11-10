@@ -8,16 +8,28 @@ import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 import java.time.OffsetDateTime;
+import java.time.Duration;
 import java.util.*;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.Max;
+import org.springframework.validation.annotation.Validated;
 
-@RestController @RequestMapping("/api/v1")
+@RestController @Validated @RequestMapping("/api/v1")
 public class CareController {
     private final CareService care;
     public CareController(CareService care){this.care=care;}
     @GetMapping("/providers")
-    public List<AppointmentSlot> search(@RequestParam @NotBlank String specialty,@RequestParam @NotBlank String postalCode,
+    public Page<AppointmentSlot> search(@RequestParam @NotBlank String specialty,@RequestParam @NotBlank String postalCode,
       @RequestParam @DateTimeFormat(iso=DateTimeFormat.ISO.DATE_TIME) OffsetDateTime from,
-      @RequestParam @DateTimeFormat(iso=DateTimeFormat.ISO.DATE_TIME) OffsetDateTime to){return care.search(specialty,postalCode,from,to);}
+      @RequestParam @DateTimeFormat(iso=DateTimeFormat.ISO.DATE_TIME) OffsetDateTime to,
+      @RequestParam(defaultValue="0") @Min(0) int page,
+      @RequestParam(defaultValue="20") @Min(1) @Max(50) int size){
+        if(to.isBefore(from)) throw new ResponseStatusException(HttpStatus.BAD_REQUEST,"The end date must be on or after the start date");
+        if(Duration.between(from,to).toDays()>90) throw new ResponseStatusException(HttpStatus.BAD_REQUEST,"Search date range cannot exceed 90 days");
+        return care.search(specialty,postalCode,from,to,PageRequest.of(page,size));
+    }
     @PostMapping("/bookings") @ResponseStatus(HttpStatus.CREATED)
     public Booking book(@RequestHeader("X-Demo-Patient") String patientId,@RequestHeader("Idempotency-Key") String key,@RequestBody BookRequest request){
         try{return care.book(patientId,request.slotId(),key);} catch(IllegalStateException e){throw new ResponseStatusException(HttpStatus.CONFLICT,"Slot is no longer available");} catch(CareService.IdempotencyConflictException e){throw new ResponseStatusException(HttpStatus.CONFLICT,"Idempotency key was already used for a different request");} catch(IllegalArgumentException e){throw new ResponseStatusException(HttpStatus.BAD_REQUEST,e.getMessage());}
