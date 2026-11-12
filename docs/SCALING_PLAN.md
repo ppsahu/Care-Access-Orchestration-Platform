@@ -41,7 +41,7 @@ Keep the application as a modular monolith at 10,000 users. Run stateless API re
 ### Search path
 
 1. Validate and normalize specialty, postal code, visit mode, and bounded date range.
-2. Require pagination (`page`, `size`) with a small maximum page size; never materialize every matching slot.
+2. Require pagination (`page`, `size`) with a small maximum page size; return a `Slice` instead of a `Page` so ordinary browsing avoids an exact total-count query. Never materialize every matching slot.
 3. Query an indexed read model. Cache common search results in Redis for a short TTL (for example, 15–30 seconds), with a cache version and `asOf` time.
 4. On a cache miss, use PostgreSQL. A read replica can serve provider/search/list reads after replica lag is monitored. Keep booking, cancellation, reschedule, and final availability validation on the primary.
 5. Display freshness and pagination metadata. Search results are suggestions, never a reservation.
@@ -53,7 +53,7 @@ Suggested indexes after checking actual query plans:
 - `provider (specialty_code, active)`
 - waitlist partial indexes for active entries by provider/specialty and preference window
 
-The current `GET /providers` returns an unbounded `List` and filters denormalized slot fields. Pagination and query-plan measurement are the first database scaling changes. As provider/clinic data grows, normalize provider and clinic records and consider a denormalized read projection for search rather than overloading booking tables.
+The current `GET /providers` is paginated and uses a `Slice`, avoiding a count query for each browse request. It still filters denormalized slot fields; query-plan measurement and a normalized provider/clinic read model remain follow-up work. As provider/clinic data grows, normalize provider and clinic records and consider a denormalized read projection for search rather than overloading booking tables.
 
 ### Booking path
 
