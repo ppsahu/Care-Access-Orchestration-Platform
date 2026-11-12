@@ -8,7 +8,7 @@ Scaling assumptions, capacity objectives, architecture, bottlenecks, and load-te
 
 - Java 21 / Spring Boot REST API
 - PostgreSQL schema and deterministic synthetic slots
-- Paginated provider availability search (20 results by default, capped at 50; date windows limited to 90 days)
+- Provider availability search
 - Patient booking, cancellation, and rescheduling endpoints
 - Database row locking and an active-slot uniqueness constraint for booking races
 - Idempotency keys for booking and rescheduling retries; a key cannot be reused with a different payload
@@ -42,7 +42,7 @@ The seed data uses December 2026 appointment times. No real patient or provider 
 
 ## API
 
-- `GET /api/v1/providers`: `specialty`, `postalCode`, `from`, `to`, optional `page` and `size` (maximum 50 per page; maximum 90-day window)
+- `GET /api/v1/providers`: `specialty`, `postalCode`, `from`, `to`, optional `page` and `size` (max 50; max date window 90 days)
 - `POST /api/v1/bookings`: `X-Demo-Patient`, `Idempotency-Key`, and `{ "slotId": "..." }`
 - `GET /api/v1/bookings`: `X-Demo-Patient`
 - `POST /api/v1/bookings/{id}/cancel`: `X-Demo-Patient`
