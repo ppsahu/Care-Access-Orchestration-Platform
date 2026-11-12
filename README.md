@@ -2,7 +2,7 @@
 
 Synthetic-data portfolio project for provider search and appointment administration. It does not diagnose conditions or recommend treatment.
 
-Scaling assumptions, capacity objectives, architecture, bottlenecks, and load-test plan: [Scaling plan](docs/SCALING_PLAN.md).
+Scaling assumptions, capacity objectives, architecture, bottlenecks, and load-test plan: [Scaling plan](docs/SCALING_PLAN.md).\n\nHigh-level architecture diagram: [High-Level Design](docs/HIGH_LEVEL_DESIGN.md).
 
 ## Current implementation
 
