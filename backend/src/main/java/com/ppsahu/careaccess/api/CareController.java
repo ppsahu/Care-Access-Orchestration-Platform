@@ -10,7 +10,7 @@ import org.springframework.web.server.ResponseStatusException;
 import java.time.OffsetDateTime;
 import java.time.Duration;
 import java.util.*;
-import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Slice;
 import org.springframework.data.domain.PageRequest;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.Max;
@@ -21,7 +21,7 @@ public class CareController {
     private final CareService care;
     public CareController(CareService care){this.care=care;}
     @GetMapping("/providers")
-    public Page<AppointmentSlot> search(@RequestParam @NotBlank String specialty,@RequestParam @NotBlank String postalCode,
+    public Slice<AppointmentSlot> search(@RequestParam @NotBlank String specialty,@RequestParam @NotBlank String postalCode,
       @RequestParam @DateTimeFormat(iso=DateTimeFormat.ISO.DATE_TIME) OffsetDateTime from,
       @RequestParam @DateTimeFormat(iso=DateTimeFormat.ISO.DATE_TIME) OffsetDateTime to,
       @RequestParam(defaultValue="0") @Min(0) int page,
