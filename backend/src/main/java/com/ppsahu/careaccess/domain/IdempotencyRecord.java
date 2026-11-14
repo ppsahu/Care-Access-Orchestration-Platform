@@ -11,9 +11,10 @@ public class IdempotencyRecord {
     @Column(name="patient_id", nullable=false) private String patientId;
     @Column(name="idempotency_key", nullable=false, length=128) private String idempotencyKey;
     @Column(name="request_hash", nullable=false, length=64) private String requestHash;
-    @Column(name="booking_id", nullable=false) private UUID bookingId;
+    @Column(name="booking_id") private UUID bookingId;
     @Column(name="created_at", nullable=false) private OffsetDateTime createdAt;
     protected IdempotencyRecord() {}
-    public IdempotencyRecord(String patientId,String key,String hash,UUID bookingId){this.id=UUID.randomUUID();this.patientId=patientId;this.idempotencyKey=key;this.requestHash=hash;this.bookingId=bookingId;this.createdAt=OffsetDateTime.now();}
+    public IdempotencyRecord(String patientId,String key,String hash){this.id=UUID.randomUUID();this.patientId=patientId;this.idempotencyKey=key;this.requestHash=hash;this.createdAt=OffsetDateTime.now();}
     public String getRequestHash(){return requestHash;} public UUID getBookingId(){return bookingId;}
+    public void complete(UUID bookingId){this.bookingId=bookingId;}
 }
