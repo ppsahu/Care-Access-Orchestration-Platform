@@ -13,7 +13,7 @@ High-level architecture diagram: [High-Level Design](docs/HIGH_LEVEL_DESIGN.md).
 - Provider availability search
 - Patient booking, cancellation, and rescheduling endpoints
 - Database row locking and an active-slot uniqueness constraint for booking races
-- Idempotency keys for booking and rescheduling retries; a key cannot be reused with a different payload
+- Atomic idempotency-key claims for booking and rescheduling retries; concurrent identical retries share one result, and keys cannot be reused with a different payload
 - Bounded synthetic demo data, PostgreSQL indexes, Flyway migrations, and Actuator health/metrics
 
 Kafka outbox delivery, Redis availability caching, deterministic referral/coverage adapters, waitlist offers, Spring AI request interpretation, and production authentication are planned next. The demo patient header is for local development only and is not authentication.
