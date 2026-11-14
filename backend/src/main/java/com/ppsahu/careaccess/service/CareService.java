@@ -22,15 +22,12 @@ public class CareService {
     public Booking book(String patientId,UUID slotId,String key){
         if(key==null||key.isBlank()||key.length()>128) throw new IllegalArgumentException("A valid Idempotency-Key header is required");
         String hash=hash(slotId.toString());
-        var prior=idempotency.findByPatientIdAndIdempotencyKey(patientId,key);
-        if(prior.isPresent()){
-            if(!prior.get().getRequestHash().equals(hash)) throw new IdempotencyConflictException();
-            return bookings.findByIdAndPatientId(prior.get().getBookingId(),patientId).orElseThrow();
-        }
+        IdempotencyRecord record=claimIdempotency(patientId,key,hash);
+        if(record.getBookingId()!=null) return bookings.findByIdAndPatientId(record.getBookingId(),patientId).orElseThrow();
         AppointmentSlot slot=slots.lockById(slotId).orElseThrow(()->new NoSuchElementException("Slot not found"));
         slot.book(); // Always re-check authoritative availability inside the transaction.
         Booking saved=bookings.save(new Booking(patientId,slot));
-        idempotency.save(new IdempotencyRecord(patientId,key,hash,saved.getId()));
+        record.complete(saved.getId());
         return saved;
     }
     @Transactional
@@ -45,11 +42,8 @@ public class CareService {
     public Booking reschedule(String patientId,UUID bookingId,UUID targetSlotId,String key){
         if(key==null||key.isBlank()||key.length()>128) throw new IllegalArgumentException("A valid Idempotency-Key header is required");
         String hash=hash(bookingId+":"+targetSlotId);
-        var prior=idempotency.findByPatientIdAndIdempotencyKey(patientId,key);
-        if(prior.isPresent()){
-            if(!prior.get().getRequestHash().equals(hash)) throw new IdempotencyConflictException();
-            return bookings.findByIdAndPatientId(prior.get().getBookingId(),patientId).orElseThrow();
-        }
+        IdempotencyRecord record=claimIdempotency(patientId,key,hash);
+        if(record.getBookingId()!=null) return bookings.findByIdAndPatientId(record.getBookingId(),patientId).orElseThrow();
         Booking current=bookings.findByIdAndPatientId(bookingId,patientId).orElseThrow(()->new NoSuchElementException("Booking not found"));
         if(current.isCancelled()) throw new IllegalStateException("Booking is already cancelled");
         if(current.getSlot().getId().equals(targetSlotId)) throw new IllegalArgumentException("Choose a different appointment slot");
@@ -60,8 +54,14 @@ public class CareService {
         AppointmentSlot target=locked.get(targetSlotId); target.book();
         current.cancel();
         Booking saved=bookings.save(new Booking(patientId,target));
-        idempotency.save(new IdempotencyRecord(patientId,key,hash,saved.getId()));
+        record.complete(saved.getId());
         return saved;
+    }
+    private IdempotencyRecord claimIdempotency(String patientId,String key,String requestHash){
+        idempotency.claimIfAbsent(UUID.randomUUID(),patientId,key,requestHash);
+        IdempotencyRecord record=idempotency.lockByPatientAndKey(patientId,key).orElseThrow();
+        if(!record.getRequestHash().equals(requestHash)) throw new IdempotencyConflictException();
+        return record;
     }
     private String hash(String value){try{return HexFormat.of().formatHex(MessageDigest.getInstance("SHA-256").digest(value.getBytes(StandardCharsets.UTF_8)));}catch(NoSuchAlgorithmException e){throw new IllegalStateException(e);}}
     public static class IdempotencyConflictException extends RuntimeException {}
