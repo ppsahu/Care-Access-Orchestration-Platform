@@ -64,7 +64,7 @@ The current `GET /providers` is paginated and uses a `Slice`, avoiding a count q
 - Reschedule by locking old and target slots in stable order, checking ownership, and atomically switching the booking. On any error, keep the original booking intact.
 - Emit domain events through an outbox in the same transaction; never publish “booking confirmed” before the commit.
 
-The current implementation has slot row locks, an active-slot partial index, and idempotency records. Before relying on it at load, harden same-key concurrent retries, add a request-size and date-range bound, and test rollback behavior for simultaneous reschedules.
+The current implementation has slot row locks, an active-slot partial index, bounded search, and atomic idempotency claims. A local concurrent smoke check confirmed identical retries return one booking ID. Before relying on it at load, add repeatable concurrency/integration coverage, enforce request-size limits, and test rollback behavior for simultaneous reschedules.
 
 ## PostgreSQL and connection capacity
 
