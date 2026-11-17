@@ -11,6 +11,7 @@ High-level architecture diagram: [High-Level Design](docs/HIGH_LEVEL_DESIGN.md).
 - Java 21 / Spring Boot REST API
 - PostgreSQL schema and deterministic synthetic slots
 - Provider availability search
+- Canonical uppercase specialty filtering keeps the PostgreSQL composite search index usable without a case-folding function
 - Patient booking, cancellation, and rescheduling endpoints
 - Database row locking and an active-slot uniqueness constraint for booking races
 - Atomic idempotency-key claims for booking and rescheduling retries; concurrent identical retries share one result, and keys cannot be reused with a different payload
