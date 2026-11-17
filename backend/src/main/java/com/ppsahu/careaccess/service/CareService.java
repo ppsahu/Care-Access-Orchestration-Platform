@@ -16,7 +16,8 @@ public class CareService {
     private final SlotRepository slots; private final BookingRepository bookings; private final IdempotencyRepository idempotency;
     public CareService(SlotRepository slots, BookingRepository bookings,IdempotencyRepository idempotency){this.slots=slots;this.bookings=bookings;this.idempotency=idempotency;}
     public Slice<AppointmentSlot> search(String specialty,String postalCode,OffsetDateTime from,OffsetDateTime to,Pageable pageable){
-        return slots.findByStatusAndSpecialtyIgnoreCaseAndPostalCodeAndStartsAtBetweenOrderByStartsAt(SlotStatus.OPEN,specialty,postalCode,from,to,pageable);
+        String normalizedSpecialty=specialty.trim().toUpperCase(Locale.ROOT);
+        return slots.findByStatusAndSpecialtyAndPostalCodeAndStartsAtBetweenOrderByStartsAt(SlotStatus.OPEN,normalizedSpecialty,postalCode.trim(),from,to,pageable);
     }
     @Transactional
     public Booking book(String patientId,UUID slotId,String key){
