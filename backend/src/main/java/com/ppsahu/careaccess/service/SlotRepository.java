@@ -11,6 +11,6 @@ import java.util.*;
 import java.time.OffsetDateTime;
 
 public interface SlotRepository extends JpaRepository<AppointmentSlot, UUID> {
-    Slice<AppointmentSlot> findByStatusAndSpecialtyIgnoreCaseAndPostalCodeAndStartsAtBetweenOrderByStartsAt(SlotStatus status, String specialty, String postalCode, OffsetDateTime from, OffsetDateTime to, Pageable pageable);
+    Slice<AppointmentSlot> findByStatusAndSpecialtyAndPostalCodeAndStartsAtBetweenOrderByStartsAt(SlotStatus status, String specialty, String postalCode, OffsetDateTime from, OffsetDateTime to, Pageable pageable);
     @Lock(LockModeType.PESSIMISTIC_WRITE) @Query("select s from AppointmentSlot s where s.id=:id") Optional<AppointmentSlot> lockById(@Param("id") UUID id);
 }
