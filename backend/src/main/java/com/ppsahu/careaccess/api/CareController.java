@@ -10,6 +10,8 @@ import org.springframework.web.server.ResponseStatusException;
 import java.time.OffsetDateTime;
 import java.time.Duration;
 import java.util.*;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpSession;
 import org.springframework.data.domain.Slice;
 import org.springframework.data.domain.PageRequest;
 import jakarta.validation.constraints.Min;
@@ -31,15 +33,16 @@ public class CareController {
         return care.search(specialty,postalCode,from,to,PageRequest.of(page,size));
     }
     @PostMapping("/bookings") @ResponseStatus(HttpStatus.CREATED)
-    public Booking book(@RequestHeader("X-Demo-Patient") String patientId,@RequestHeader("Idempotency-Key") String key,@RequestBody BookRequest request){
-        try{return care.book(patientId,request.slotId(),key);} catch(IllegalStateException e){throw new ResponseStatusException(HttpStatus.CONFLICT,"Slot is no longer available");} catch(CareService.IdempotencyConflictException e){throw new ResponseStatusException(HttpStatus.CONFLICT,"Idempotency key was already used for a different request");} catch(IllegalArgumentException e){throw new ResponseStatusException(HttpStatus.BAD_REQUEST,e.getMessage());}
+    public Booking book(HttpServletRequest request,@RequestHeader("Idempotency-Key") String key,@RequestBody BookRequest body){
+        try{return care.book(patientId(request),body.slotId(),key);} catch(IllegalStateException e){throw new ResponseStatusException(HttpStatus.CONFLICT,"Slot is no longer available");} catch(CareService.IdempotencyConflictException e){throw new ResponseStatusException(HttpStatus.CONFLICT,"Idempotency key was already used for a different request");} catch(IllegalArgumentException e){throw new ResponseStatusException(HttpStatus.BAD_REQUEST,e.getMessage());}
     }
-    @GetMapping("/bookings") public List<Booking> bookings(@RequestHeader("X-Demo-Patient") String patientId){return care.bookings(patientId);}
-    @PostMapping("/bookings/{id}/cancel") public Booking cancel(@RequestHeader("X-Demo-Patient") String patientId,@PathVariable UUID id){
-        try{return care.cancel(patientId,id);} catch(SecurityException e){throw new ResponseStatusException(HttpStatus.NOT_FOUND);}
+    @GetMapping("/bookings") public List<Booking> bookings(HttpServletRequest request){return care.bookings(patientId(request));}
+    @PostMapping("/bookings/{id}/cancel") public Booking cancel(HttpServletRequest request,@PathVariable UUID id){
+        try{return care.cancel(patientId(request),id);} catch(SecurityException e){throw new ResponseStatusException(HttpStatus.NOT_FOUND);}
     }
-    @PostMapping("/bookings/{id}/reschedule") public Booking reschedule(@RequestHeader("X-Demo-Patient") String patientId,@PathVariable UUID id,@RequestHeader("Idempotency-Key") String key,@RequestBody BookRequest request){
-        try{return care.reschedule(patientId,id,request.slotId(),key);}catch(CareService.IdempotencyConflictException e){throw new ResponseStatusException(HttpStatus.CONFLICT,"Idempotency key was already used for a different request");}catch(NoSuchElementException e){throw new ResponseStatusException(HttpStatus.NOT_FOUND);}catch(IllegalStateException e){throw new ResponseStatusException(HttpStatus.CONFLICT,e.getMessage());}catch(IllegalArgumentException e){throw new ResponseStatusException(HttpStatus.BAD_REQUEST,e.getMessage());}
+    @PostMapping("/bookings/{id}/reschedule") public Booking reschedule(HttpServletRequest servletRequest,@PathVariable UUID id,@RequestHeader("Idempotency-Key") String key,@RequestBody BookRequest request){
+        try{return care.reschedule(patientId(servletRequest),id,request.slotId(),key);}catch(CareService.IdempotencyConflictException e){throw new ResponseStatusException(HttpStatus.CONFLICT,"Idempotency key was already used for a different request");}catch(NoSuchElementException e){throw new ResponseStatusException(HttpStatus.NOT_FOUND);}catch(IllegalStateException e){throw new ResponseStatusException(HttpStatus.CONFLICT,e.getMessage());}catch(IllegalArgumentException e){throw new ResponseStatusException(HttpStatus.BAD_REQUEST,e.getMessage());}
     }
+    private String patientId(HttpServletRequest request){HttpSession session=request.getSession(false);Object id=session==null?null:session.getAttribute("patientId");if(!(id instanceof String patientId))throw new ResponseStatusException(HttpStatus.UNAUTHORIZED,"Please sign in");return patientId;}
     public record BookRequest(UUID slotId){}
 }

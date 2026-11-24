@@ -16,3 +16,8 @@ management:
         include: health,info,metrics
 server:
   port: 8080
+  servlet:
+    session:
+      cookie:
+        http-only: true
+        same-site: lax
