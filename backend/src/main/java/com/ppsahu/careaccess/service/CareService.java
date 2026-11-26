@@ -15,6 +15,7 @@ import org.springframework.data.domain.Pageable;
 public class CareService {
     private final SlotRepository slots; private final BookingRepository bookings; private final IdempotencyRepository idempotency;
     public CareService(SlotRepository slots, BookingRepository bookings,IdempotencyRepository idempotency){this.slots=slots;this.bookings=bookings;this.idempotency=idempotency;}
+    @Transactional(readOnly = true)
     public Slice<AppointmentSlot> search(String specialty,String postalCode,OffsetDateTime from,OffsetDateTime to,Pageable pageable){
         String normalizedSpecialty=specialty.trim().toUpperCase(Locale.ROOT);
         return slots.findByStatusAndSpecialtyAndPostalCodeAndStartsAtBetweenOrderByStartsAt(SlotStatus.OPEN,normalizedSpecialty,postalCode.trim(),from,to,pageable);
@@ -37,6 +38,7 @@ public class CareService {
         if(!b.getPatientId().equals(patientId)) throw new SecurityException("Booking not found");
         if(!b.isCancelled()) b.cancel(); return b;
     }
+    @Transactional(readOnly = true)
     public List<Booking> bookings(String patientId){return bookings.findByPatientIdOrderByCreatedAtDesc(patientId);}
 
     @Transactional
